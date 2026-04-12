@@ -69,7 +69,7 @@ export default function EnterpriseDashboard() {
                 </div>
                 {analyzed.length === 0 ? (
                   <div className="empty-state" style={{ padding: 24 }}>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}></div>
                     <div style={{ fontSize: 14 }}>No analysis data yet.</div>
                     <div className="text-muted" style={{ marginTop: 4 }}>Add employees and have them complete their profiles to get AI insights.</div>
                   </div>

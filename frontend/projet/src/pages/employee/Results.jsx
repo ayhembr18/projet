@@ -104,7 +104,7 @@ export default function EmployeeResults() {
           </div>
           <button className="btn btn-primary" onClick={handleAnalyze}
             disabled={analyzing || !profileComplete}>
-            {analyzing ? 'Analyzing...' : '🤖 Re-run analysis'}
+            {analyzing ? 'Analyzing...' : ' Re-run analysis'}
           </button>
         </div>
 
@@ -113,7 +113,7 @@ export default function EmployeeResults() {
 
         {!profileComplete && (
           <div className="alert alert-warning">
-            ⚠️ Complete your{' '}
+             Complete your{' '}
             <Link to="/employee/profile" style={{ fontWeight: 600 }}>HR and skill profiles</Link>
             {' '}before running analysis.
           </div>
@@ -185,7 +185,7 @@ export default function EmployeeResults() {
 
                   <div style={{ marginTop: 16 }}>
                     <div style={{ fontSize: 12, color: 'var(--gray-500)', marginBottom: 8 }}>
-                      ✅ Skills you have ({sk.skill_count?.current ?? sk.matching_skills?.length ?? 0})
+                       Skills you have ({sk.skill_count?.current ?? sk.matching_skills?.length ?? 0})
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
                       {(sk.matching_skills || []).map(s => (
@@ -227,7 +227,7 @@ export default function EmployeeResults() {
             {/* Learning recommendations */}
             {sk?.recommendations?.length > 0 && (
               <div className="card" style={{ marginBottom: 20 }}>
-                <div className="card-title" style={{ marginBottom: 16 }}>📚 Learning recommendations</div>
+                <div className="card-title" style={{ marginBottom: 16 }}> Learning recommendations</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                   {sk.recommendations.map(rec => (
                     <div key={rec.skill} style={{

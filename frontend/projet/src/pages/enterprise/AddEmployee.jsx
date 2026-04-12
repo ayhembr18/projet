@@ -52,7 +52,7 @@ export default function EnterpriseAddEmployee() {
           </div>
 
           <div className="card" style={{ borderColor: 'var(--success)', borderWidth: 1.5 }}>
-            <div style={{ fontSize: 28, marginBottom: 12 }}>✅</div>
+            <div style={{ fontSize: 28, marginBottom: 12 }}></div>
             <div className="card-title" style={{ marginBottom: 4 }}>
               {result.firstName} {result.lastName} has been added
             </div>
@@ -67,7 +67,7 @@ export default function EnterpriseAddEmployee() {
             </div>
 
             <div className="alert alert-warning" style={{ fontSize: 13, marginBottom: 20 }}>
-              ⚠️ This password is shown <strong>only once</strong>. Copy and send it to the employee now. They will be prompted to change it on first login.
+               This password is shown <strong>only once</strong>. Copy and send it to the employee now. They will be prompted to change it on first login.
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
