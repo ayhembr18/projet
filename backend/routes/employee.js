@@ -66,15 +66,15 @@ router.put('/skill-profile', async (req, res) => {
   }
 });
 
-// POST /api/employee/analyze — CORRIGÉ
+// POST /api/employee/analyze
 router.post('/analyze', async (req, res) => {
   try {
     const employee = await Employee.findById(req.employee._id);
 
-    if (!employee.hrProfile?.jobSatisfaction) {
+    if (!employee.hrProfile || !employee.hrProfile.jobSatisfaction) {
       return res.status(400).json({ message: 'Please complete your HR profile first' });
     }
-    if (!employee.skillProfile?.role) {
+    if (!employee.skillProfile || !employee.skillProfile.role) {
       return res.status(400).json({ message: 'Please complete your skill profile first' });
     }
 
@@ -120,46 +120,49 @@ router.post('/analyze', async (req, res) => {
       DistanceFromHome: employee.hrProfile.distanceFromHome || 10,
     };
 
-    // Appel à FastAPI avec logs de debug
     let skillAnalysis = null;
     let hrPredictions = null;
     const errors = [];
 
     try {
-      const skillRes = await axios.post(`${AI_SERVICE}/analyze`, skillData);
-      skillAnalysis = skillRes.data;
-      console.log("✅ Skill Analysis reçue");
+      const skillRes = await axios.post(`${AI_SERVICE}/analyze`, skillData, { timeout: 10000 });
+      // The model wraps its response: { skillAnalysis: { coverage_score, ... } }
+      // We unwrap it so we store the flat object directly.
+      skillAnalysis = skillRes.data?.skillAnalysis || skillRes.data;
+      console.log(' Skill Analysis received');
     } catch (e) {
-      console.error("❌ Skill Analysis Error:", e.message);
+      console.error(' Skill Analysis Error:', e.message);
       errors.push(`Skill analysis: ${e.message}`);
     }
 
     try {
-      const hrRes = await axios.post(`${AI_SERVICE}/predict`, hrData);
-      hrPredictions = hrRes.data;
-      console.log("✅ HR Predictions reçue");
+      const hrRes = await axios.post(`${AI_SERVICE}/predict`, hrData, { timeout: 10000 });
+      // The model wraps its response: { hrPredictions: { predictions: {...}, insights: [...] } }
+      // We unwrap it so we store the inner object directly.
+      hrPredictions = hrRes.data?.hrPredictions || hrRes.data;
+      console.log(' HR Predictions received');
     } catch (e) {
-      console.error("❌ HR Predictions Error:", e.message);
+      console.error(' HR Predictions Error:', e.message);
       errors.push(`HR prediction: ${e.message}`);
     }
 
-    // SAUVEGARDE FORCEE : On utilise .save() pour être sûr que le schéma est respecté
+    // Save the unwrapped results
     employee.aiResults = {
-      skillAnalysis: skillAnalysis,
-      hrPredictions: hrPredictions,
+      skillAnalysis,
+      hrPredictions,
       analyzedAt: new Date(),
     };
 
     await employee.save();
-    console.log("💾 Résultats sauvegardés en base pour :", employee.firstName);
+    console.log(' AI results saved for:', employee.firstName);
 
     res.json({
       message: errors.length === 0 ? 'Analysis complete' : 'Partial analysis complete',
-      results: employee.aiResults, // On renvoie l'objet complet
+      results: employee.aiResults,
       errors,
     });
   } catch (err) {
-    console.error("Critical Error during analysis:", err);
+    console.error('Critical Error during analysis:', err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -169,11 +172,10 @@ router.get('/my-results', async (req, res) => {
   try {
     const employee = await Employee.findById(req.employee._id)
       .select('aiResults skillProfile hrProfile firstName lastName');
-    
-    // On s'assure de renvoyer une structure cohérente
-    res.json({ 
-      results: employee.aiResults || null, 
-      employee 
+
+    res.json({
+      results: employee.aiResults || null,
+      employee,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

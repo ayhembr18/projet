@@ -1,181 +1,192 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/common/Sidebar';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 
-function GaugeBar({ value, label, color }) {
-  const barColor = color === 'danger' ? '#ef4444' : color === 'success' ? '#22c55e' : '#3b82f6';
-  const safeValue = Math.min(Math.max(Number(value) || 0, 0), 100);
-  return (
-    <div style={{ marginBottom: 15 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '5px' }}>
-        <span>{label}</span>
-        <span style={{ fontWeight: 'bold' }}>{safeValue}%</span>
-      </div>
-      <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '4px' }}>
-        <div style={{ width: `${safeValue}%`, height: '100%', background: barColor, borderRadius: '4px', transition: 'width 1s' }} />
-      </div>
-    </div>
-  );
-}
-
-export default function EmployeeResults() {
-  const [results, setResults] = useState(null);
+export default function EmployeeDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [analyzeMsg, setAnalyzeMsg] = useState('');
+  const [analyzeError, setAnalyzeError] = useState('');
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/employee/my-results');
-      // res.data = { results: employee.aiResults, employee }
-      // employee.aiResults = { skillAnalysis: {...}, hrPredictions: {...}, analyzedAt }
-      setResults(res.data.results);
-      console.log('[Results] aiResults reçu:', res.data.results);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    api.get('/employee/me')
+      .then(res => setEmployee(res.data.employee))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Redirect to change-password if required
+  useEffect(() => {
+    if (employee?.mustChangePassword) {
+      navigate('/employee/profile');
     }
-  };
-
-  useEffect(() => { load(); }, []);
+  }, [employee, navigate]);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
-    setMsg('');
+    setAnalyzeMsg('');
+    setAnalyzeError('');
     try {
       const res = await api.post('/employee/analyze');
-      console.log('[Analyze] réponse:', res.data);
-      setMsg('Analyse terminée !');
-      await load();
+      setAnalyzeMsg(res.data.message || 'Analysis complete!');
+      // Refresh employee data to show updated results
+      const updated = await api.get('/employee/me');
+      setEmployee(updated.data.employee);
     } catch (err) {
-      setMsg(err.response?.data?.message || 'Analyse échouée.');
+      setAnalyzeError(err.response?.data?.message || 'Analysis failed. Please try again.');
     } finally {
       setAnalyzing(false);
     }
   };
 
   if (loading) return (
-    <div className="layout"><Sidebar /><main className="main">Chargement...</main></div>
+    <div className="layout"><Sidebar />
+      <main className="main"><div className="text-muted">Loading...</div></main>
+    </div>
   );
 
-  // Structure en base :
-  // results.skillAnalysis  = réponse brute FastAPI /analyze  = { skillAnalysis: { matching_skills, missing_skills, readiness_level, estimated_upskilling_months } }
-  // results.hrPredictions  = réponse brute FastAPI /predict  = { hrPredictions: { predictions: { promotion_readiness, skill_growth_trajectory, attrition_risk }, insights: [] } }
-
-  const sk = results?.skillAnalysis?.skillAnalysis;   // objet avec readiness_level, etc.
-  const hrRoot = results?.hrPredictions?.hrPredictions; // objet avec predictions + insights
-  const hrPred = hrRoot?.predictions;
-  const hrInsights = hrRoot?.insights || [];
+  const hr = employee?.aiResults?.hrPredictions?.predictions;
+  const sk = employee?.aiResults?.skillAnalysis;
+  const profileComplete = employee?.profileCompleted && employee?.skillProfile?.role;
 
   return (
     <div className="layout">
       <Sidebar />
-      <main className="main" style={{ padding: '30px', background: '#f9fafb', minHeight: '100vh' }}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#111827', margin: 0 }}>Tableau de bord IA</h1>
-          <button className="btn btn-primary btn-sm" onClick={handleAnalyze} disabled={analyzing}>
-            {analyzing ? 'Analyse en cours...' : '🔄 Relancer l\'analyse'}
-          </button>
+      <main className="main">
+        <div className="page-header">
+          <div className="page-title">
+            Welcome, {employee?.firstName} {employee?.lastName}
+          </div>
+          <div className="page-subtitle">{employee?.jobTitle} · {employee?.department}</div>
         </div>
 
-        {msg && (
-          <div className={`alert ${msg.includes('échouée') ? 'alert-error' : 'alert-success'}`} style={{ marginBottom: 16 }}>
-            {msg}
+        {/* Profile completion status */}
+        {!profileComplete && (
+          <div className="alert alert-warning" style={{ marginBottom: 20 }}>
+             Your profile is incomplete. Please fill in your{' '}
+            <Link to="/employee/profile" style={{ fontWeight: 600 }}>HR and skill profiles</Link>
+            {' '}before running an analysis.
           </div>
         )}
 
-        {!results ? (
-          <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Aucune analyse disponible</div>
-            <div style={{ color: 'var(--gray-500)', marginBottom: 20, fontSize: 14 }}>
-              Complétez votre profil puis lancez l'analyse pour voir vos résultats.
-            </div>
-            <button className="btn btn-primary" onClick={handleAnalyze} disabled={analyzing}>
-              {analyzing ? 'Analyse en cours...' : 'Lancer l\'analyse'}
-            </button>
+        {analyzeMsg && <div className="alert alert-success">{analyzeMsg}</div>}
+        {analyzeError && <div className="alert alert-error">{analyzeError}</div>}
+
+        {/* Stats row */}
+        <div className="stats-grid" style={{ marginBottom: 24 }}>
+          <div className={`stat-card ${employee?.profileCompleted ? 'success' : ''}`}>
+            <div className="stat-value">{employee?.profileCompleted ? '✓' : '✗'}</div>
+            <div className="stat-label">HR Profile</div>
           </div>
-        ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: 20 }}>
+          <div className={`stat-card ${employee?.skillProfile?.role ? 'success' : ''}`}>
+            <div className="stat-value">{employee?.skillProfile?.role ? '✓' : '✗'}</div>
+            <div className="stat-label">Skill Profile</div>
+          </div>
+          <div className={`stat-card ${hr ? 'primary' : ''}`}>
+            <div className="stat-value">{hr ? hr.promotion_readiness.score + '%' : '—'}</div>
+            <div className="stat-label">Promotion Score</div>
+          </div>
+          <div className={`stat-card ${sk ? 'success' : ''}`}>
+            <div className="stat-value">{sk ? sk.coverage_score + '%' : '—'}</div>
+            <div className="stat-label">Skill Coverage</div>
+          </div>
+          <div className={`stat-card ${hr ? (hr.attrition_risk.level === 'Low' ? 'success' : hr.attrition_risk.level === 'Medium' ? 'warning' : 'danger') : ''}`}>
+            <div className="stat-value">{hr ? hr.attrition_risk.probability + '%' : '—'}</div>
+            <div className="stat-label">Attrition Risk</div>
+          </div>
+        </div>
 
-              {/* Prédictions de Carrière */}
-              <div className="card" style={{ background: '#fff', padding: '20px', borderRadius: '12px' }}>
-                <h3 style={{ marginBottom: '20px' }}>Prédictions de Carrière</h3>
-                {hrPred ? (
-                  <>
-                    <GaugeBar value={hrPred.promotion_readiness?.score} label="Préparation Promotion" color="primary" />
-                    <GaugeBar value={hrPred.skill_growth_trajectory?.score} label="Croissance Compétences" color="success" />
-                    <GaugeBar value={hrPred.attrition_risk?.probability} label="Risque de départ" color="danger" />
-                    <div style={{ marginTop: 12, fontSize: 13, color: '#6b7280' }}>
-                      Statut promotion : <strong>{hrPred.promotion_readiness?.status}</strong> ·
-                      Risque : <strong>{hrPred.attrition_risk?.level}</strong> ·
-                      Croissance : <strong>{hrPred.skill_growth_trajectory?.status}</strong>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ color: '#9ca3af', fontSize: 14 }}>Données non disponibles</div>
-                )}
+        <div className="grid-2" style={{ marginBottom: 20 }}>
+          {/* Quick actions */}
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 16 }}>Actions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                className="btn btn-primary"
+                style={{ justifyContent: 'center' }}
+                onClick={handleAnalyze}
+                disabled={analyzing || !profileComplete}
+              >
+                {analyzing ? 'Running analysis...' : ' Run AI Analysis'}
+              </button>
+              <Link to="/employee/profile" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
+                 Edit my profiles
+              </Link>
+              <Link to="/employee/results" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
+                 View full results
+              </Link>
+            </div>
+            {!profileComplete && (
+              <div className="text-muted" style={{ marginTop: 12, fontSize: 12 }}>
+                Complete both HR and skill profiles to enable analysis.
               </div>
+            )}
+          </div>
 
-              {/* Analyse des Compétences */}
-              <div className="card" style={{ background: '#fff', padding: '20px', borderRadius: '12px' }}>
-                <h3 style={{ marginBottom: '20px' }}>Analyse des Compétences</h3>
-                {sk ? (
-                  <>
-                    <div style={{ marginBottom: 16 }}>
-                      <p style={{ margin: '0 0 6px' }}><strong>Niveau :</strong> {sk.readiness_level}</p>
-                      <p style={{ margin: 0 }}><strong>Mise à niveau estimée :</strong> {sk.estimated_upskilling_months} mois</p>
-                    </div>
+          {/* AI snapshot */}
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 4 }}>AI snapshot</div>
+            <div className="card-subtitle" style={{ marginBottom: 16 }}>
+              {employee?.aiResults?.analyzedAt
+                ? `Last analyzed ${new Date(employee.aiResults.analyzedAt).toLocaleDateString()}`
+                : 'No analysis run yet'}
+            </div>
 
-                    {sk.matching_skills?.length > 0 && (
-                      <div style={{ marginBottom: 12 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>✅ Compétences acquises</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {sk.matching_skills.map(s => (
-                            <span key={s} className="badge badge-approved" style={{ fontSize: 11 }}>{s}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {sk.missing_skills?.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>❌ Compétences manquantes</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {sk.missing_skills.map(s => (
-                            <span key={s} className="badge badge-denied" style={{ fontSize: 11 }}>{s}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div style={{ color: '#9ca3af', fontSize: 14 }}>Données non disponibles</div>
-                )}
-
-                {hrInsights.length > 0 && (
-                  <div style={{ marginTop: 16, borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>💡 Recommandations</div>
-                    {hrInsights.map((ins, i) => (
-                      <div key={i} style={{ fontSize: 13, color: '#4b5563', padding: '6px 10px', background: '#f9fafb', borderRadius: 6, marginBottom: 4 }}>
-                        • {ins}
-                      </div>
-                    ))}
+            {hr ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>Promotion readiness</span>
+                  <span className={`badge ${hr.promotion_readiness.status === 'Ready' ? 'badge-approved' : hr.promotion_readiness.status === 'Ready Soon' ? 'badge-pending' : 'badge-gray'}`}>
+                    {hr.promotion_readiness.status}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>Growth trajectory</span>
+                  <span className={`badge ${hr.skill_growth_trajectory.status === 'Accelerating' ? 'badge-approved' : 'badge-gray'}`}>
+                    {hr.skill_growth_trajectory.status}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>Attrition risk</span>
+                  <span className={`badge badge-${hr.attrition_risk.level.toLowerCase()}`}>
+                    {hr.attrition_risk.level}
+                  </span>
+                </div>
+                {sk && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>Skill readiness</span>
+                    <span className="badge badge-primary">{sk.readiness_level}</span>
                   </div>
                 )}
               </div>
-            </div>
-
-            {results.analyzedAt && (
-              <div style={{ fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>
-                Dernière analyse : {new Date(results.analyzedAt).toLocaleString()}
+            ) : (
+              <div className="empty-state" style={{ padding: 20 }}>
+                <div style={{ fontSize: 13, marginTop: 8 }}>Run analysis to see your AI insights</div>
               </div>
             )}
-          </>
+          </div>
+        </div>
+
+        {/* Insights */}
+        {employee?.aiResults?.hrPredictions?.insights?.length > 0 && (
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 16 }}>Key insights</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {employee.aiResults.hrPredictions.insights.map((ins, i) => (
+                <div key={i} style={{
+                  padding: '10px 14px', background: 'var(--gray-50)',
+                  borderRadius: 8, fontSize: 14, color: 'var(--gray-700)',
+                  borderLeft: '3px solid var(--primary)'
+                }}>
+                  {ins}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </main>
     </div>

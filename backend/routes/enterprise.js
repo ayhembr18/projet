@@ -27,7 +27,8 @@ router.get('/dashboard', async (req, res) => {
     const stats = {
       total: employees.length,
       profileCompleted: employees.filter(e => e.profileCompleted).length,
-      analyzed: employees.filter(e => e.aiResults?.skillAnalysis).length,
+      analyzed: employees.filter(e => e.aiResults && e.aiResults.skillAnalysis).length,
+      // hrPredictions is stored unwrapped: { predictions: { attrition_risk, ... }, insights }
       highAttritionRisk: employees.filter(
         e => e.aiResults?.hrPredictions?.predictions?.attrition_risk?.level === 'High'
       ).length,
@@ -63,7 +64,7 @@ router.get('/employees/:id', async (req, res) => {
   try {
     const employee = await Employee.findOne({
       _id: req.params.id,
-      enterpriseId: req.enterprise._id
+      enterpriseId: req.enterprise._id,
     }).select('-password');
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
     res.json({ employee });
@@ -72,35 +73,36 @@ router.get('/employees/:id', async (req, res) => {
   }
 });
 
-// POST /api/enterprise/employees — add a new employee, auto-generate credentials
+// POST /api/enterprise/employees — add employee, auto-generate credentials
 router.post('/employees', async (req, res) => {
   try {
     const { firstName, lastName, email, jobTitle, department } = req.body;
     if (!firstName || !lastName || !email || !jobTitle || !department) {
-      return res.status(400).json({ message: 'firstName, lastName, email, jobTitle, and department are required' });
+      return res.status(400).json({
+        message: 'firstName, lastName, email, jobTitle, and department are required',
+      });
     }
 
-    // Check email uniqueness within this enterprise
     const emailExists = await Employee.findOne({ email, enterpriseId: req.enterprise._id });
-    if (emailExists) return res.status(409).json({ message: 'An employee with this email already exists' });
+    if (emailExists) {
+      return res.status(409).json({ message: 'An employee with this email already exists' });
+    }
 
-    // Generate credentials
     const { username, plainPassword } = generateCredentials(firstName, lastName);
 
-    // Make sure username is unique (retry if collision)
+    // Ensure username uniqueness
     let finalUsername = username;
     let attempt = 0;
     while (await Employee.findOne({ username: finalUsername })) {
       attempt++;
-      const { username: u2 } = generateCredentials(firstName, lastName);
-      finalUsername = u2 + attempt;
+      finalUsername = `${username}${attempt}`;
     }
 
     const employee = new Employee({
       enterpriseId: req.enterprise._id,
       username: finalUsername,
-      password: plainPassword, // will be hashed by pre-save hook
-      temporaryPassword: plainPassword, // plain text for display once
+      password: plainPassword,        // hashed by pre-save hook
+      temporaryPassword: plainPassword,
       firstName,
       lastName,
       email,
@@ -110,10 +112,8 @@ router.post('/employees', async (req, res) => {
 
     await employee.save();
 
-    // Update enterprise employee count
     await Enterprise.findByIdAndUpdate(req.enterprise._id, { $inc: { employeeCount: 1 } });
 
-    // Return the employee with credentials (only time plain password is sent)
     res.status(201).json({
       message: 'Employee added successfully',
       employee: {
@@ -122,8 +122,8 @@ router.post('/employees', async (req, res) => {
           username: finalUsername,
           temporaryPassword: plainPassword,
           loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/employee/login`,
-        }
-      }
+        },
+      },
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -150,7 +150,7 @@ router.patch('/employees/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/enterprise/employees/:id — soft delete (deactivate)
+// DELETE /api/enterprise/employees/:id — soft delete
 router.delete('/employees/:id', async (req, res) => {
   try {
     const employee = await Employee.findOneAndUpdate(
@@ -171,7 +171,7 @@ router.post('/employees/:id/reset-credentials', async (req, res) => {
   try {
     const employee = await Employee.findOne({
       _id: req.params.id,
-      enterpriseId: req.enterprise._id
+      enterpriseId: req.enterprise._id,
     });
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
@@ -186,7 +186,7 @@ router.post('/employees/:id/reset-credentials', async (req, res) => {
       credentials: {
         username: employee.username,
         temporaryPassword: plainPassword,
-      }
+      },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

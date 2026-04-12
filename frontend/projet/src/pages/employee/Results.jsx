@@ -1,18 +1,43 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Sidebar from '../../components/common/Sidebar';
 import api from '../../utils/api';
 
-function GaugeBar({ value, label, color }) {
-  const barColor = color === 'danger' ? '#ef4444' : color === 'success' ? '#22c55e' : '#3b82f6';
-  const safeValue = Math.min(Math.max(Number(value) || 0, 0), 100);
+function ScoreRing({ value, color, label, size = 80 }) {
+  const r = 30;
+  const circ = 2 * Math.PI * r;
+  const fill = circ - (value / 100) * circ;
+  const strokeColor =
+    color === 'danger' ? 'var(--danger)' :
+    color === 'warning' ? 'var(--warning)' :
+    color === 'success' ? 'var(--success)' : 'var(--primary)';
   return (
-    <div style={{ marginBottom: 15 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '5px' }}>
-        <span>{label}</span>
-        <span style={{ fontWeight: 'bold' }}>{safeValue}%</span>
+    <div style={{ textAlign: 'center' }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--gray-100)" strokeWidth="7" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={strokeColor} strokeWidth="7"
+          strokeDasharray={circ} strokeDashoffset={fill}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`} strokeLinecap="round" />
+        <text x={size / 2} y={size / 2 + 5} textAnchor="middle" fontSize="14" fontWeight="700" fill={strokeColor}>
+          {value}%
+        </text>
+      </svg>
+      <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 6, maxWidth: size, margin: '6px auto 0' }}>
+        {label}
       </div>
-      <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '4px' }}>
-        <div style={{ width: `${safeValue}%`, height: '100%', background: barColor, borderRadius: '4px', transition: 'width 1s' }} />
+    </div>
+  );
+}
+
+function ScoreBar({ label, value, color = 'primary' }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
+        <span style={{ color: 'var(--gray-600)' }}>{label}</span>
+        <span style={{ fontWeight: 600 }}>{value}%</span>
+      </div>
+      <div className="progress-bar-wrap">
+        <div className={`progress-bar ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
       </div>
     </div>
   );
@@ -23,147 +48,228 @@ export default function EmployeeResults() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeMsg, setAnalyzeMsg] = useState('');
+  const [analyzeError, setAnalyzeError] = useState('');
 
-  const load = async () => {
-    try {
-      const res = await api.get('/employee/my-results');
-      setData(res.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+  const fetchResults = () => {
+    return api.get('/employee/my-results')
+      .then(res => setData(res.data))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { fetchResults(); }, []);
 
   const handleAnalyze = async () => {
-    setAnalyzing(true);
-    setAnalyzeMsg('');
+    setAnalyzing(true); setAnalyzeMsg(''); setAnalyzeError('');
     try {
-      await api.post('/employee/analyze');
-      setAnalyzeMsg('Analyse terminée !');
+      const res = await api.post('/employee/analyze');
+      setAnalyzeMsg(res.data.message || 'Analysis complete!');
       setLoading(true);
-      await load();
+      await fetchResults();
     } catch (err) {
-      setAnalyzeMsg(err.response?.data?.message || 'Analyse échouée.');
+      setAnalyzeError(err.response?.data?.message || 'Analysis failed.');
     } finally {
       setAnalyzing(false);
     }
   };
 
-  if (loading) return <div className="layout"><Sidebar /><main className="main">Chargement...</main></div>;
+  if (loading) return (
+    <div className="layout"><Sidebar />
+      <main className="main"><div className="text-muted">Loading...</div></main>
+    </div>
+  );
 
+  // Results are stored unwrapped:
+  // aiResults.skillAnalysis  = { coverage_score, matching_skills, missing_skills, ... }
+  // aiResults.hrPredictions  = { predictions: { attrition_risk, promotion_readiness, skill_growth_trajectory }, insights }
   const results = data?.results;
-
-  // Le backend sauvegarde la réponse brute du FastAPI.
-  // FastAPI /analyze retourne { skillAnalysis: {...} }
-  // FastAPI /predict retourne { hrPredictions: {...} }
-  // Donc en base : aiResults.skillAnalysis = { skillAnalysis: {...} }
-  //                aiResults.hrPredictions = { hrPredictions: {...} }
-  // On gère les deux cas (avec ou sans double imbrication) pour être robuste.
-  const rawSk = results?.skillAnalysis;
-  const rawHr = results?.hrPredictions;
-  const sk = rawSk?.skillAnalysis ?? rawSk;
-  const hr = rawHr?.hrPredictions ?? rawHr;
+  const sk = results?.skillAnalysis;
+  const hr = results?.hrPredictions;
+  const predictions = hr?.predictions;
+  const insights = hr?.insights || [];
+  const employee = data?.employee;
+  const profileComplete = employee?.profileCompleted && employee?.skillProfile?.role;
 
   return (
     <div className="layout">
       <Sidebar />
-      <main className="main" style={{ padding: '30px', background: '#f9fafb', minHeight: '100vh' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#111827', margin: 0 }}>Tableau de bord IA</h1>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleAnalyze}
-            disabled={analyzing}
-          >
-            {analyzing ? 'Analyse en cours...' : '🔄 Relancer l\'analyse'}
+      <main className="main">
+        <div className="flex-between" style={{ marginBottom: 24 }}>
+          <div>
+            <div className="page-title">My AI Results</div>
+            <div className="page-subtitle">
+              {results?.analyzedAt
+                ? `Last analyzed ${new Date(results.analyzedAt).toLocaleString()}`
+                : 'No analysis run yet'}
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={handleAnalyze}
+            disabled={analyzing || !profileComplete}>
+            {analyzing ? 'Analyzing...' : '🤖 Re-run analysis'}
           </button>
         </div>
 
-        {analyzeMsg && (
-          <div className={`alert ${analyzeMsg.includes('échouée') ? 'alert-error' : 'alert-success'}`} style={{ marginBottom: 16 }}>
-            {analyzeMsg}
+        {analyzeMsg && <div className="alert alert-success">{analyzeMsg}</div>}
+        {analyzeError && <div className="alert alert-error">{analyzeError}</div>}
+
+        {!profileComplete && (
+          <div className="alert alert-warning">
+            ⚠️ Complete your{' '}
+            <Link to="/employee/profile" style={{ fontWeight: 600 }}>HR and skill profiles</Link>
+            {' '}before running analysis.
           </div>
         )}
 
-        {!sk ? (
-          <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🤖</div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Aucune analyse disponible</div>
-            <div style={{ color: 'var(--gray-500)', marginBottom: 20, fontSize: 14 }}>
-              Complétez votre profil puis lancez l'analyse pour voir vos résultats.
+        {!results && profileComplete && (
+          <div className="card" style={{ textAlign: 'center', padding: 48 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+            <div className="card-title" style={{ marginBottom: 8 }}>No results yet</div>
+            <div className="card-subtitle" style={{ marginBottom: 24 }}>
+              Run your first AI analysis to see your skill gap report and HR predictions.
             </div>
             <button className="btn btn-primary" onClick={handleAnalyze} disabled={analyzing}>
-              {analyzing ? 'Analyse en cours...' : 'Lancer l\'analyse'}
+              {analyzing ? 'Analyzing...' : 'Run analysis now'}
             </button>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* Colonne Gauche : Carrière */}
-            <div className="card" style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <h3 style={{ marginBottom: '20px' }}>Prédictions de Carrière</h3>
-              {hr?.predictions ? (
-                <>
-                  <GaugeBar value={hr.predictions.promotion_readiness?.score} label="Préparation Promotion" color="primary" />
-                  <GaugeBar value={hr.predictions.skill_growth_trajectory?.score} label="Croissance Compétences" color="success" />
-                  <GaugeBar value={hr.predictions.attrition_risk?.probability} label="Risque de départ" color="danger" />
-                  <div style={{ marginTop: 12, fontSize: 13, color: '#6b7280' }}>
-                    Statut promotion : <strong>{hr.predictions.promotion_readiness?.status}</strong> ·
-                    Risque : <strong>{hr.predictions.attrition_risk?.level}</strong>
-                  </div>
-                </>
-              ) : (
-                <div style={{ color: 'var(--gray-400)', fontSize: 14 }}>Données de prédiction non disponibles</div>
-              )}
-            </div>
+        )}
 
-            {/* Colonne Droite : Compétences + Insights */}
-            <div className="card" style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <h3 style={{ marginBottom: '20px' }}>Analyse des Compétences</h3>
-              <div style={{ marginBottom: '15px' }}>
-                <p><strong>Niveau :</strong> {sk.readiness_level ?? '—'}</p>
-                <p><strong>Mise à niveau estimée :</strong> {sk.estimated_upskilling_months ?? '—'} mois</p>
-              </div>
-
-              {sk.missing_skills?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <strong style={{ fontSize: 13 }}>Compétences manquantes :</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                    {sk.missing_skills.map(s => (
-                      <span key={s} className="badge badge-denied" style={{ fontSize: 11 }}>{s}</span>
-                    ))}
-                  </div>
+        {results && (
+          <>
+            {/* Score rings */}
+            {(predictions || sk) && (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card-title" style={{ marginBottom: 24 }}>Overall scores</div>
+                <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {predictions?.attrition_risk && (
+                    <ScoreRing
+                      value={predictions.attrition_risk.probability}
+                      label={`Attrition risk (${predictions.attrition_risk.level})`}
+                      color={predictions.attrition_risk.level === 'High' ? 'danger' : predictions.attrition_risk.level === 'Medium' ? 'warning' : 'success'}
+                    />
+                  )}
+                  {predictions?.promotion_readiness && (
+                    <ScoreRing
+                      value={predictions.promotion_readiness.score}
+                      label={`Promotion readiness (${predictions.promotion_readiness.status})`}
+                      color="primary"
+                    />
+                  )}
+                  {predictions?.skill_growth_trajectory && (
+                    <ScoreRing
+                      value={predictions.skill_growth_trajectory.score}
+                      label={`Growth trajectory (${predictions.skill_growth_trajectory.status})`}
+                      color={predictions.skill_growth_trajectory.status === 'Accelerating' ? 'success' : predictions.skill_growth_trajectory.status === 'Steady' ? 'primary' : 'warning'}
+                    />
+                  )}
+                  {sk?.coverage_score !== undefined && (
+                    <ScoreRing
+                      value={sk.coverage_score}
+                      label="Skill coverage"
+                      color={sk.coverage_score > 65 ? 'success' : sk.coverage_score > 40 ? 'warning' : 'danger'}
+                    />
+                  )}
                 </div>
-              )}
-
-              {sk.matching_skills?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <strong style={{ fontSize: 13 }}>Compétences acquises :</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                    {sk.matching_skills.map(s => (
-                      <span key={s} className="badge badge-approved" style={{ fontSize: 11 }}>{s}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {hr?.insights?.length > 0 && (
-                <div>
-                  <strong style={{ fontSize: 13 }}>Recommandations :</strong>
-                  <ul style={{ marginTop: '10px', fontSize: '14px', color: '#4b5563', paddingLeft: 0, listStyle: 'none' }}>
-                    {hr.insights.map((ins, i) => (
-                      <li key={i} style={{ marginBottom: '6px', padding: '6px 10px', background: '#f9fafb', borderRadius: 6 }}>• {ins}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {results?.analyzedAt && (
-              <div style={{ gridColumn: '1 / -1', fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>
-                Dernière analyse : {new Date(results.analyzedAt).toLocaleString()}
               </div>
             )}
-          </div>
+
+            <div className="grid-2" style={{ marginBottom: 20 }}>
+              {/* Skill gap */}
+              {sk && (
+                <div className="card">
+                  <div className="card-title" style={{ marginBottom: 4 }}>Skill gap analysis</div>
+                  <div className="card-subtitle" style={{ marginBottom: 16 }}>
+                    Readiness: <strong>{sk.readiness_level}</strong> · Est. upskilling: <strong>{sk.estimated_upskilling_months} months</strong>
+                  </div>
+
+                  <ScoreBar label="Skill coverage" value={sk.coverage_score}
+                    color={sk.coverage_score > 65 ? 'success' : sk.coverage_score > 40 ? 'warning' : 'danger'} />
+
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 12, color: 'var(--gray-500)', marginBottom: 8 }}>
+                      ✅ Skills you have ({sk.skill_count?.current ?? sk.matching_skills?.length ?? 0})
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                      {(sk.matching_skills || []).map(s => (
+                        <span key={s} className="badge badge-approved" style={{ fontSize: 11 }}>{s}</span>
+                      ))}
+                      {(!sk.matching_skills || sk.matching_skills.length === 0) && (
+                        <span className="text-muted" style={{ fontSize: 12 }}>None matched yet — add skills in your profile</span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: 12, color: 'var(--gray-500)', marginBottom: 8 }}>
+                      ❌ Skills to develop ({sk.skill_count?.missing ?? sk.missing_skills?.length ?? 0})
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {(sk.missing_skills || []).map(s => (
+                        <span key={s} className="badge badge-denied" style={{ fontSize: 11 }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* HR predictions */}
+              {predictions && (
+                <div className="card">
+                  <div className="card-title" style={{ marginBottom: 16 }}>HR predictions</div>
+                  <ScoreBar label={`Attrition risk — ${predictions.attrition_risk.level}`}
+                    value={predictions.attrition_risk.probability}
+                    color={predictions.attrition_risk.level === 'High' ? 'danger' : predictions.attrition_risk.level === 'Medium' ? 'warning' : 'success'} />
+                  <ScoreBar label={`Promotion readiness — ${predictions.promotion_readiness.status}`}
+                    value={predictions.promotion_readiness.score} color="primary" />
+                  <ScoreBar label={`Growth trajectory — ${predictions.skill_growth_trajectory.status}`}
+                    value={predictions.skill_growth_trajectory.score}
+                    color={predictions.skill_growth_trajectory.status === 'Accelerating' ? 'success' : 'primary'} />
+                </div>
+              )}
+            </div>
+
+            {/* Learning recommendations */}
+            {sk?.recommendations?.length > 0 && (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card-title" style={{ marginBottom: 16 }}>📚 Learning recommendations</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                  {sk.recommendations.map(rec => (
+                    <div key={rec.skill} style={{
+                      padding: 16, background: 'var(--gray-50)',
+                      borderRadius: 10, border: '1px solid var(--gray-200)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <span className={`badge ${rec.urgency === 'Critical' ? 'badge-denied' : rec.urgency === 'High' ? 'badge-pending' : 'badge-gray'}`}>
+                          {rec.urgency}
+                        </span>
+                        <span style={{ fontWeight: 600, fontSize: 14 }}>{rec.skill}</span>
+                      </div>
+                      {rec.courses.map((c, i) => (
+                        <div key={i} style={{ fontSize: 12, color: 'var(--gray-600)', lineHeight: 1.6 }}>
+                          <div style={{ fontWeight: 500 }}>{c.certification}</div>
+                          <div>{c.platform} · {c.duration}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Insights */}
+            {insights.length > 0 && (
+              <div className="card">
+                <div className="card-title" style={{ marginBottom: 16 }}>💡 Key insights</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {insights.map((ins, i) => (
+                    <div key={i} style={{
+                      padding: '10px 16px', background: 'var(--primary-light)',
+                      borderRadius: 8, fontSize: 14, color: 'var(--gray-800)',
+                      borderLeft: '3px solid var(--primary)'
+                    }}>
+                      {ins}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
