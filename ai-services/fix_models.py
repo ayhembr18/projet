@@ -11,19 +11,46 @@ class SmartSkillGapAnalyzer:
 
         # Role-based required skills map
         role_skills_map = {
+            # Engineering
             'Software Engineer': ['Python', 'JavaScript', 'Git', 'Docker', 'SQL', 'REST APIs', 'Testing', 'CI/CD'],
             'Data Scientist': ['Python', 'Machine Learning', 'SQL', 'Statistics', 'Pandas', 'Scikit-learn', 'Data Visualization', 'Deep Learning'],
-            'DevOps Engineer': ['Docker', 'Kubernetes', 'AWS', 'CI/CD', 'Linux', 'Terraform', 'Monitoring', 'Git'],
-            'Product Manager': ['Product Strategy', 'Agile', 'User Research', 'Roadmapping', 'Data Analysis', 'Stakeholder Management'],
-            'HR Manager': ['Recruitment', 'Employee Relations', 'Performance Management', 'Labor Law', 'HRIS', 'Training & Development'],
-            'Sales Manager': ['CRM', 'Negotiation', 'Pipeline Management', 'Lead Generation', 'Communication', 'Data Analysis'],
-            'Marketing Manager': ['Digital Marketing', 'SEO', 'Content Strategy', 'Analytics', 'Social Media', 'Email Marketing'],
-            'Finance Manager': ['Financial Modeling', 'Excel', 'Accounting', 'Budgeting', 'Risk Management', 'ERP Systems'],
-            'Project Manager': ['Agile', 'Scrum', 'Risk Management', 'Stakeholder Management', 'MS Project', 'Budgeting'],
+            'DevOps Engineer': ['Docker', 'Kubernetes', 'AWS', 'CI/CD', 'Linux', 'Terraform', 'Networking', 'Git'],
+            # Product & Project
+            'Product Manager': ['Product Strategy', 'Agile', 'User Research', 'Roadmapping', 'Stakeholder Management', 'Product Analytics', 'A/B Testing'],
+            'Project Manager': ['Agile', 'Scrum', 'Risk Management', 'Stakeholder Management', 'MS Project', 'Jira', 'Budgeting'],
+            'Scrum Master': ['Scrum', 'Agile', 'Kanban', 'Jira', 'Confluence', 'Conflict Resolution', 'Sprint Planning'],
+            'Business Analyst': ['SQL', 'Data Visualization', 'Excel', 'Agile', 'Stakeholder Management', 'Process Improvement', 'Jira'],
+            # HR
+            'HR Manager': ['Recruitment', 'Employee Relations', 'Performance Management', 'Labor Law', 'HRIS', 'Training & Development', 'Workforce Planning', 'Compensation & Benefits'],
+            'HR Specialist': ['Recruitment', 'Onboarding', 'Employee Relations', 'HRIS', 'Labor Law', 'HR Policies', 'Payroll Management'],
+            'Recruiter': ['Talent Acquisition', 'Recruitment', 'Onboarding', 'Communication', 'Stakeholder Management', 'HR Policies'],
+            'Talent Acquisition Specialist': ['Talent Acquisition', 'Recruitment', 'Onboarding', 'Employee Engagement', 'Communication', 'Diversity & Inclusion'],
+            # Sales & Marketing
+            'Sales Manager': ['CRM', 'Negotiation', 'Pipeline Management', 'Lead Generation', 'Communication', 'Salesforce', 'B2B Sales'],
+            'Sales Representative': ['CRM', 'Negotiation', 'Lead Generation', 'Communication', 'B2B Sales', 'B2C Sales', 'Account Management'],
+            'Account Manager': ['CRM', 'Account Management', 'Negotiation', 'Communication', 'Salesforce', 'Pipeline Management'],
+            'Marketing Manager': ['Digital Marketing', 'SEO', 'Content Strategy', 'Google Analytics', 'Social Media', 'Email Marketing', 'Campaign Management', 'Brand Management'],
+            'Digital Marketing Specialist': ['SEO', 'SEM', 'Google Analytics', 'Social Media', 'Email Marketing', 'Content Strategy', 'Copywriting'],
+            'Content Specialist': ['Copywriting', 'Content Strategy', 'SEO', 'Social Media', 'Brand Management', 'Market Research'],
+            # Finance
+            'Finance Manager': ['Financial Modeling', 'Excel', 'Accounting', 'Budgeting', 'Risk Management', 'ERP Systems', 'Financial Reporting'],
+            'Accountant': ['Accounting', 'Excel', 'Tax Management', 'Payroll', 'IFRS', 'Auditing', 'QuickBooks'],
+            'Financial Analyst': ['Financial Modeling', 'Excel', 'Forecasting', 'Data Visualization', 'SQL', 'Risk Management', 'Cost Analysis'],
+            # IT
+            'IT Support Specialist': ['Help Desk Support', 'Hardware Troubleshooting', 'Windows Server', 'Microsoft 365', 'Ticketing Systems', 'Networking', 'IT Security'],
+            'IT Technician': ['Hardware Troubleshooting', 'Help Desk Support', 'Windows Server', 'VPN Configuration', 'Patch Management', 'Backup & Recovery', 'Networking'],
+            'Network Administrator': ['Networking', 'Network Administration', 'Firewall Management', 'VPN Configuration', 'Linux', 'IT Security', 'Windows Server'],
+            'System Administrator': ['Linux', 'System Administration', 'Active Directory', 'Windows Server', 'Backup & Recovery', 'Patch Management', 'Networking'],
+            # Legal
+            'Legal Counsel': ['Contract Management', 'Corporate Law', 'Legal Research', 'Compliance', 'GDPR', 'Intellectual Property', 'Employment Law'],
+            'Compliance Officer': ['Compliance', 'GDPR', 'Risk Management', 'Legal Research', 'Regulatory Affairs', 'Data Privacy', 'HR Policies'],
+            # Operations
+            'Operations Manager': ['Process Improvement', 'Lean Management', 'Vendor Management', 'Supply Chain Management', 'Risk Management', 'ERP Systems', 'Six Sigma'],
+            'Supply Chain Specialist': ['Supply Chain Management', 'Inventory Management', 'Logistics', 'Procurement', 'Demand Planning', 'Vendor Management', 'ERP Systems'],
         }
 
         # Default required skills if role not found
-        default_required = ['Communication', 'Problem Solving', 'Teamwork', 'Time Management', 'Microsoft Office']
+        default_required = ['Communication', 'Problem Solving', 'Teamwork', 'Time Management', 'Leadership', 'Adaptability', 'Critical Thinking']
         required_skills = role_skills_map.get(role, default_required)
 
         # Normalize for comparison
@@ -51,22 +78,109 @@ class SmartSkillGapAnalyzer:
 
         # Build recommendations for missing skills
         course_db = {
+            # Software Engineering
+            'Python': [{'certification': 'Python for Everybody', 'platform': 'Coursera', 'duration': '2 months'}],
+            'JavaScript': [{'certification': 'The Complete JavaScript Course', 'platform': 'Udemy', 'duration': '2 months'}],
+            'TypeScript': [{'certification': 'Understanding TypeScript', 'platform': 'Udemy', 'duration': '5 weeks'}],
+            'Java': [{'certification': 'Java Programming Masterclass', 'platform': 'Udemy', 'duration': '3 months'}],
+            'Git': [{'certification': 'Git & GitHub Bootcamp', 'platform': 'Udemy', 'duration': '3 weeks'}],
+            'REST APIs': [{'certification': 'API Design & Fundamentals', 'platform': 'Udemy', 'duration': '1 month'}],
+            'Testing': [{'certification': 'Software Testing Bootcamp', 'platform': 'Udemy', 'duration': '6 weeks'}],
             'Docker': [{'certification': 'Docker Certified Associate', 'platform': 'Docker', 'duration': '2 months'}],
             'Kubernetes': [{'certification': 'CKA', 'platform': 'CNCF', 'duration': '3 months'}],
-            'AWS': [{'certification': 'AWS Solutions Architect', 'platform': 'AWS', 'duration': '3 months'}],
-            'Python': [{'certification': 'Python for Everybody', 'platform': 'Coursera', 'duration': '2 months'}],
-            'Machine Learning': [{'certification': 'ML Specialization', 'platform': 'Coursera', 'duration': '3 months'}],
-            'SQL': [{'certification': 'SQL for Data Science', 'platform': 'Coursera', 'duration': '1 month'}],
-            'JavaScript': [{'certification': 'The Complete JavaScript Course', 'platform': 'Udemy', 'duration': '2 months'}],
-            'Git': [{'certification': 'Git & GitHub Bootcamp', 'platform': 'Udemy', 'duration': '3 weeks'}],
-            'Agile': [{'certification': 'PMI-ACP', 'platform': 'PMI', 'duration': '2 months'}],
-            'Scrum': [{'certification': 'Professional Scrum Master', 'platform': 'Scrum.org', 'duration': '1 month'}],
-            'Data Visualization': [{'certification': 'Tableau Desktop Specialist', 'platform': 'Tableau', 'duration': '2 months'}],
-            'Terraform': [{'certification': 'HashiCorp Terraform Associate', 'platform': 'HashiCorp', 'duration': '2 months'}],
-            'Deep Learning': [{'certification': 'Deep Learning Specialization', 'platform': 'Coursera', 'duration': '4 months'}],
-            'REST APIs': [{'certification': 'API Design & Fundamentals', 'platform': 'Udemy', 'duration': '1 month'}],
             'CI/CD': [{'certification': 'DevOps CI/CD with Jenkins', 'platform': 'Udemy', 'duration': '6 weeks'}],
             'Linux': [{'certification': 'LPIC-1', 'platform': 'LPI', 'duration': '2 months'}],
+            'Terraform': [{'certification': 'HashiCorp Terraform Associate', 'platform': 'HashiCorp', 'duration': '2 months'}],
+            'AWS': [{'certification': 'AWS Solutions Architect', 'platform': 'AWS', 'duration': '3 months'}],
+            'Azure': [{'certification': 'AZ-900 Azure Fundamentals', 'platform': 'Microsoft', 'duration': '1 month'}],
+            'GCP': [{'certification': 'Google Cloud Associate Engineer', 'platform': 'Google', 'duration': '2 months'}],
+            'Networking': [{'certification': 'CompTIA Network+', 'platform': 'CompTIA', 'duration': '2 months'}],
+            # Data
+            'SQL': [{'certification': 'SQL for Data Science', 'platform': 'Coursera', 'duration': '1 month'}],
+            'Machine Learning': [{'certification': 'ML Specialization', 'platform': 'Coursera', 'duration': '3 months'}],
+            'Deep Learning': [{'certification': 'Deep Learning Specialization', 'platform': 'Coursera', 'duration': '4 months'}],
+            'Data Visualization': [{'certification': 'Tableau Desktop Specialist', 'platform': 'Tableau', 'duration': '2 months'}],
+            'Power BI': [{'certification': 'Microsoft Power BI Data Analyst', 'platform': 'Microsoft', 'duration': '2 months'}],
+            'Excel': [{'certification': 'Microsoft Excel Expert (MOS)', 'platform': 'Microsoft', 'duration': '4 weeks'}],
+            'Statistics': [{'certification': 'Statistics with Python', 'platform': 'Coursera', 'duration': '2 months'}],
+            'Pandas': [{'certification': 'Data Analysis with Pandas', 'platform': 'Udemy', 'duration': '4 weeks'}],
+            'HR Analytics': [{'certification': 'People Analytics', 'platform': 'Coursera', 'duration': '2 months'}],
+            # Project & Product
+            'Agile': [{'certification': 'PMI-ACP', 'platform': 'PMI', 'duration': '2 months'}],
+            'Scrum': [{'certification': 'Professional Scrum Master (PSM I)', 'platform': 'Scrum.org', 'duration': '1 month'}],
+            'Kanban': [{'certification': 'Kanban Management Professional', 'platform': 'Kanban University', 'duration': '3 weeks'}],
+            'Jira': [{'certification': 'Jira Fundamentals', 'platform': 'Atlassian', 'duration': '2 weeks'}],
+            'Product Strategy': [{'certification': 'Product Management Certificate', 'platform': 'Product School', 'duration': '2 months'}],
+            'Roadmapping': [{'certification': 'Product Roadmapping', 'platform': 'Pragmatic Institute', 'duration': '1 month'}],
+            'Risk Management': [{'certification': 'PMI-RMP', 'platform': 'PMI', 'duration': '2 months'}],
+            'Stakeholder Management': [{'certification': 'PMP Certification', 'platform': 'PMI', 'duration': '3 months'}],
+            'MS Project': [{'certification': 'Microsoft Project Fundamentals', 'platform': 'Microsoft', 'duration': '3 weeks'}],
+            'Process Improvement': [{'certification': 'Lean Six Sigma Yellow Belt', 'platform': 'ASQ', 'duration': '1 month'}],
+            # HR
+            'Recruitment': [{'certification': 'SHRM-CP', 'platform': 'SHRM', 'duration': '3 months'}],
+            'Talent Acquisition': [{'certification': 'Talent Acquisition Specialist', 'platform': 'HRCI', 'duration': '2 months'}],
+            'Employee Relations': [{'certification': 'Employee Relations Certificate', 'platform': 'HRCI', 'duration': '6 weeks'}],
+            'Performance Management': [{'certification': 'Performance Management Course', 'platform': 'LinkedIn Learning', 'duration': '4 weeks'}],
+            'Labor Law': [{'certification': 'Employment Law Fundamentals', 'platform': 'Coursera', 'duration': '6 weeks'}],
+            'HRIS': [{'certification': 'Workday HCM Fundamentals', 'platform': 'Workday', 'duration': '4 weeks'}],
+            'Training & Development': [{'certification': 'ATD Certificate in L&D', 'platform': 'ATD', 'duration': '2 months'}],
+            'Compensation & Benefits': [{'certification': 'Certified Compensation Professional', 'platform': 'WorldatWork', 'duration': '3 months'}],
+            'Workforce Planning': [{'certification': 'Strategic Workforce Planning', 'platform': 'HRCI', 'duration': '6 weeks'}],
+            'Payroll Management': [{'certification': 'Certified Payroll Professional', 'platform': 'APA', 'duration': '3 months'}],
+            'Diversity & Inclusion': [{'certification': 'Diversity & Inclusion Certificate', 'platform': 'Cornell ILR', 'duration': '2 months'}],
+            'Onboarding': [{'certification': 'Employee Onboarding Best Practices', 'platform': 'LinkedIn Learning', 'duration': '2 weeks'}],
+            'Conflict Resolution': [{'certification': 'Conflict Resolution Fundamentals', 'platform': 'Coursera', 'duration': '4 weeks'}],
+            # Finance
+            'Financial Modeling': [{'certification': 'Financial Modeling & Valuation', 'platform': 'CFI', 'duration': '3 months'}],
+            'Accounting': [{'certification': 'Accounting Fundamentals', 'platform': 'CFI', 'duration': '2 months'}],
+            'Auditing': [{'certification': 'Certified Internal Auditor (CIA)', 'platform': 'IIA', 'duration': '4 months'}],
+            'Tax Management': [{'certification': 'Taxation Certificate', 'platform': 'AICPA', 'duration': '2 months'}],
+            'ERP Systems': [{'certification': 'SAP Fundamentals', 'platform': 'SAP', 'duration': '2 months'}],
+            'SAP': [{'certification': 'SAP Certified Application Associate', 'platform': 'SAP', 'duration': '3 months'}],
+            'Financial Reporting': [{'certification': 'Financial Reporting & Analysis', 'platform': 'CFI', 'duration': '6 weeks'}],
+            'Budgeting': [{'certification': 'Budgeting & Forecasting', 'platform': 'CFI', 'duration': '4 weeks'}],
+            'IFRS': [{'certification': 'IFRS Certificate', 'platform': 'ACCA', 'duration': '3 months'}],
+            # Sales & Marketing
+            'Digital Marketing': [{'certification': 'Google Digital Marketing Certificate', 'platform': 'Google', 'duration': '6 months'}],
+            'SEO': [{'certification': 'SEO Certification', 'platform': 'HubSpot Academy', 'duration': '4 weeks'}],
+            'SEM': [{'certification': 'Google Ads Certification', 'platform': 'Google', 'duration': '3 weeks'}],
+            'Social Media': [{'certification': 'Social Media Marketing', 'platform': 'HubSpot Academy', 'duration': '4 weeks'}],
+            'Email Marketing': [{'certification': 'Email Marketing Certification', 'platform': 'HubSpot Academy', 'duration': '3 weeks'}],
+            'Google Analytics': [{'certification': 'Google Analytics Certification', 'platform': 'Google', 'duration': '2 weeks'}],
+            'CRM': [{'certification': 'Salesforce Admin Certification', 'platform': 'Salesforce', 'duration': '2 months'}],
+            'Salesforce': [{'certification': 'Salesforce Certified Administrator', 'platform': 'Salesforce', 'duration': '2 months'}],
+            'HubSpot': [{'certification': 'HubSpot Sales Software', 'platform': 'HubSpot Academy', 'duration': '3 weeks'}],
+            'Negotiation': [{'certification': 'Successful Negotiation', 'platform': 'Coursera', 'duration': '4 weeks'}],
+            'Content Strategy': [{'certification': 'Content Marketing Certification', 'platform': 'HubSpot Academy', 'duration': '4 weeks'}],
+            'Lead Generation': [{'certification': 'LinkedIn Marketing Fundamentals', 'platform': 'LinkedIn', 'duration': '3 weeks'}],
+            # IT Support
+            'Help Desk Support': [{'certification': 'CompTIA A+', 'platform': 'CompTIA', 'duration': '2 months'}],
+            'Hardware Troubleshooting': [{'certification': 'CompTIA A+', 'platform': 'CompTIA', 'duration': '2 months'}],
+            'Network Administration': [{'certification': 'CompTIA Network+', 'platform': 'CompTIA', 'duration': '2 months'}],
+            'Active Directory': [{'certification': 'Microsoft 365 Fundamentals', 'platform': 'Microsoft', 'duration': '4 weeks'}],
+            'Windows Server': [{'certification': 'Windows Server Administration', 'platform': 'Microsoft', 'duration': '2 months'}],
+            'Microsoft 365': [{'certification': 'Microsoft 365 Fundamentals (MS-900)', 'platform': 'Microsoft', 'duration': '4 weeks'}],
+            'IT Security': [{'certification': 'CompTIA Security+', 'platform': 'CompTIA', 'duration': '2 months'}],
+            'Ticketing Systems': [{'certification': 'ITIL 4 Foundation', 'platform': 'Axelos', 'duration': '1 month'}],
+            'ITIL': [{'certification': 'ITIL 4 Foundation', 'platform': 'Axelos', 'duration': '1 month'}],
+            'System Administration': [{'certification': 'Linux Professional Institute (LPIC-1)', 'platform': 'LPI', 'duration': '2 months'}],
+            'Backup & Recovery': [{'certification': 'Veeam Backup & Replication', 'platform': 'Veeam', 'duration': '3 weeks'}],
+            'Firewall Management': [{'certification': 'CompTIA Security+', 'platform': 'CompTIA', 'duration': '2 months'}],
+            'VPN Configuration': [{'certification': 'Network Security Fundamentals', 'platform': 'Udemy', 'duration': '4 weeks'}],
+            # Legal
+            'Contract Management': [{'certification': 'CCMP Contract Management', 'platform': 'NCMA', 'duration': '3 months'}],
+            'Compliance': [{'certification': 'Certified Compliance & Ethics Professional', 'platform': 'SCCE', 'duration': '3 months'}],
+            'GDPR': [{'certification': 'GDPR Foundation & Practitioner', 'platform': 'IAPP', 'duration': '6 weeks'}],
+            'Legal Research': [{'certification': 'Legal Research Certificate', 'platform': 'Coursera', 'duration': '4 weeks'}],
+            'Data Privacy': [{'certification': 'CIPP/E Certification', 'platform': 'IAPP', 'duration': '3 months'}],
+            # Operations
+            'Supply Chain Management': [{'certification': 'APICS CSCP', 'platform': 'ASCM', 'duration': '3 months'}],
+            'Lean Management': [{'certification': 'Lean Six Sigma Green Belt', 'platform': 'ASQ', 'duration': '3 months'}],
+            'Six Sigma': [{'certification': 'Six Sigma Green Belt', 'platform': 'ASQ', 'duration': '3 months'}],
+            'Quality Assurance': [{'certification': 'Certified Quality Auditor', 'platform': 'ASQ', 'duration': '2 months'}],
+            'Procurement': [{'certification': 'CIPS Level 4', 'platform': 'CIPS', 'duration': '3 months'}],
+            'Logistics': [{'certification': 'Logistics & Supply Chain Management', 'platform': 'Coursera', 'duration': '2 months'}],
+            'Vendor Management': [{'certification': 'Vendor Management Fundamentals', 'platform': 'LinkedIn Learning', 'duration': '3 weeks'}],
         }
 
         recommendations = []

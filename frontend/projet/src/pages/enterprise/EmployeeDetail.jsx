@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/common/Sidebar';
 import api from '../../utils/api';
 
@@ -27,10 +27,24 @@ export default function EnterpriseEmployeeDetail() {
   const [loading, setLoading] = useState(true);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetResult, setResetResult] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get(`/enterprise/employees/${id}`).then(res => setEmp(res.data.employee)).finally(() => setLoading(false));
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!confirm(`Permanently remove ${emp?.firstName} ${emp?.lastName}? This will delete their account and all data. This cannot be undone.`)) return;
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/enterprise/employees/${id}`);
+      navigate('/enterprise/staff');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove employee');
+      setDeleteLoading(false);
+    }
+  };
 
   const handleReset = async () => {
     if (!confirm('Reset credentials for this employee?')) return;
@@ -72,9 +86,14 @@ export default function EnterpriseEmployeeDetail() {
               </span>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={handleReset} disabled={resetLoading}>
-            {resetLoading ? 'Resetting...' : 'Reset credentials'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary btn-sm" onClick={handleReset} disabled={resetLoading}>
+              {resetLoading ? 'Resetting...' : 'Reset credentials'}
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleteLoading}>
+              {deleteLoading ? 'Removing...' : '🗑 Remove employee'}
+            </button>
+          </div>
         </div>
 
         {resetResult && (

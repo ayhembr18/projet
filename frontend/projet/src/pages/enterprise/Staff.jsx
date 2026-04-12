@@ -16,6 +16,17 @@ export default function EnterpriseStaff() {
     }).finally(() => setLoading(false));
   }, []);
 
+  const handleDelete = async (emp) => {
+    if (!confirm(`Permanently remove ${emp.firstName} ${emp.lastName}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/enterprise/employees/${emp._id}`);
+      setEmployees(prev => prev.filter(e => e._id !== emp._id));
+      setTotal(t => t - 1);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove employee');
+    }
+  };
+
   const filtered = employees.filter(e =>
     search === '' ||
     `${e.firstName} ${e.lastName} ${e.department} ${e.jobTitle}`.toLowerCase().includes(search.toLowerCase())
@@ -100,7 +111,10 @@ export default function EnterpriseStaff() {
                             ) : '—'}
                           </td>
                           <td>
+                            <div style={{ display: 'flex', gap: 6 }}>
                             <Link to={`/enterprise/staff/${emp._id}`} className="btn btn-secondary btn-sm">View</Link>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(emp)}>Remove</button>
+                          </div>
                           </td>
                         </tr>
                       );

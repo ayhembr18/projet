@@ -4,21 +4,74 @@ import api from '../../utils/api';
 
 const ROLES = [
   'Software Engineer', 'Data Scientist', 'DevOps Engineer', 'Product Manager',
-  'HR Manager', 'Sales Manager', 'Marketing Manager', 'Finance Manager', 'Project Manager', 'Other',
+  'HR Manager', 'HR Specialist', 'Recruiter', 'Talent Acquisition Specialist',
+  'Sales Manager', 'Sales Representative', 'Account Manager',
+  'Marketing Manager', 'Digital Marketing Specialist', 'Content Specialist',
+  'Finance Manager', 'Accountant', 'Financial Analyst',
+  'Project Manager', 'Scrum Master', 'Business Analyst',
+  'IT Support Specialist', 'IT Technician', 'Network Administrator', 'System Administrator',
+  'Legal Counsel', 'Compliance Officer',
+  'Operations Manager', 'Supply Chain Specialist',
+  'Other',
 ];
 
-const ALL_SKILLS = [
-  'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Rust',
-  'React', 'Vue', 'Angular', 'Node.js', 'Django', 'FastAPI', 'Spring Boot',
-  'SQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Elasticsearch',
-  'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Terraform', 'CI/CD', 'Linux',
-  'Git', 'REST APIs', 'GraphQL', 'Microservices', 'Testing',
-  'Machine Learning', 'Deep Learning', 'Scikit-learn', 'Pandas', 'Statistics',
-  'Data Visualization', 'Tableau', 'Power BI',
-  'Agile', 'Scrum', 'Product Strategy', 'Roadmapping', 'User Research', 'Stakeholder Management',
-  'Communication', 'Problem Solving', 'Teamwork', 'Time Management', 'Leadership',
-  'Negotiation', 'CRM', 'Digital Marketing', 'SEO', 'Financial Modeling', 'Excel',
-];
+const SKILLS_BY_CATEGORY = {
+  '💻 Software Engineering': [
+    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Rust', 'PHP', 'Swift', 'Kotlin',
+    'React', 'Vue', 'Angular', 'Node.js', 'Django', 'FastAPI', 'Spring Boot', 'Laravel',
+    'REST APIs', 'GraphQL', 'Microservices', 'WebSockets', 'Testing', 'Git',
+  ],
+  '🗄️ Data & Analytics': [
+    'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch', 'Oracle DB',
+    'Pandas', 'NumPy', 'Scikit-learn', 'Statistics', 'Data Visualization', 'Tableau', 'Power BI', 'Excel',
+    'Machine Learning', 'Deep Learning', 'TensorFlow', 'PyTorch', 'NLP', 'Computer Vision', 'HR Analytics',
+  ],
+  '☁️ DevOps & Cloud': [
+    'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Terraform', 'CI/CD', 'Linux',
+    'Ansible', 'Jenkins', 'Prometheus', 'Grafana', 'Nginx', 'Networking', 'Security',
+  ],
+  '🧑‍💼 HR & People Management': [
+    'Recruitment', 'Talent Acquisition', 'Onboarding', 'Employee Relations', 'Performance Management',
+    'Labor Law', 'HRIS', 'Payroll Management', 'Training & Development', 'Succession Planning',
+    'Compensation & Benefits', 'Conflict Resolution', 'Diversity & Inclusion',
+    'Workforce Planning', 'HR Policies', 'Exit Interviews', 'Employee Engagement',
+  ],
+  '💰 Finance & Accounting': [
+    'Financial Modeling', 'Budgeting', 'Forecasting', 'Accounting', 'Auditing',
+    'Tax Management', 'Risk Management', 'ERP Systems', 'SAP', 'QuickBooks',
+    'Financial Reporting', 'Cash Flow Management', 'Cost Analysis', 'IFRS', 'Payroll',
+  ],
+  '📣 Marketing & Sales': [
+    'Digital Marketing', 'SEO', 'SEM', 'Content Strategy', 'Social Media', 'Email Marketing',
+    'Google Analytics', 'CRM', 'HubSpot', 'Salesforce', 'Lead Generation', 'Copywriting',
+    'Brand Management', 'Market Research', 'Campaign Management', 'Negotiation', 'Pipeline Management',
+    'B2B Sales', 'B2C Sales', 'Account Management',
+  ],
+  '📋 Project & Product Management': [
+    'Agile', 'Scrum', 'Kanban', 'Waterfall', 'Product Strategy', 'Roadmapping',
+    'User Research', 'Stakeholder Management', 'MS Project', 'Jira', 'Confluence',
+    'OKRs', 'Sprint Planning', 'Product Analytics', 'A/B Testing', 'Risk Management',
+  ],
+  '🔧 IT Support & Systems': [
+    'Help Desk Support', 'Hardware Troubleshooting', 'Network Administration', 'Active Directory',
+    'Windows Server', 'Microsoft 365', 'VPN Configuration', 'IT Security', 'Ticketing Systems',
+    'System Administration', 'Backup & Recovery', 'ITIL', 'Firewall Management', 'VoIP', 'Patch Management',
+  ],
+  '⚖️ Legal & Compliance': [
+    'Contract Management', 'Corporate Law', 'Compliance', 'GDPR', 'Intellectual Property',
+    'Legal Research', 'Regulatory Affairs', 'Data Privacy', 'Employment Law',
+  ],
+  '🛠️ Operations & Supply Chain': [
+    'Supply Chain Management', 'Inventory Management', 'Logistics', 'Procurement',
+    'Lean Management', 'Six Sigma', 'Quality Assurance', 'Process Improvement',
+    'Vendor Management', 'Warehouse Management', 'Demand Planning',
+  ],
+  '🌐 Soft Skills': [
+    'Communication', 'Problem Solving', 'Teamwork', 'Time Management', 'Leadership',
+    'Critical Thinking', 'Adaptability', 'Emotional Intelligence', 'Presentation Skills',
+    'Decision Making', 'Mentoring', 'Cross-functional Collaboration',
+  ],
+};
 
 export default function EmployeeProfile() {
   const [tab, setTab] = useState('hr');
@@ -336,23 +389,30 @@ export default function EmployeeProfile() {
               <label className="form-label">
                 Current skills ({skill.currentSkills.length} selected) — click to toggle
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                {ALL_SKILLS.map(s => (
-                  <button key={s} type="button"
-                    onClick={() => toggleSkill(s)}
-                    style={{
-                      padding: '5px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
-                      border: '1px solid',
-                      borderColor: skill.currentSkills.includes(s) ? 'var(--primary)' : 'var(--gray-300)',
-                      background: skill.currentSkills.includes(s) ? 'var(--primary-light)' : 'white',
-                      color: skill.currentSkills.includes(s) ? 'var(--primary)' : 'var(--gray-600)',
-                      fontWeight: skill.currentSkills.includes(s) ? 600 : 400,
-                      transition: 'all 0.15s',
-                    }}>
-                    {s}
-                  </button>
-                ))}
-              </div>
+              {Object.entries(SKILLS_BY_CATEGORY).map(([category, skills]) => (
+                <div key={category} style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-500)', marginBottom: 8, letterSpacing: '0.03em' }}>
+                    {category}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {skills.map(s => (
+                      <button key={s} type="button"
+                        onClick={() => toggleSkill(s)}
+                        style={{
+                          padding: '5px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                          border: '1px solid',
+                          borderColor: skill.currentSkills.includes(s) ? 'var(--primary)' : 'var(--gray-300)',
+                          background: skill.currentSkills.includes(s) ? 'var(--primary-light)' : 'white',
+                          color: skill.currentSkills.includes(s) ? 'var(--primary)' : 'var(--gray-600)',
+                          fontWeight: skill.currentSkills.includes(s) ? 600 : 400,
+                          transition: 'all 0.15s',
+                        }}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={saveSkill} disabled={saving}>

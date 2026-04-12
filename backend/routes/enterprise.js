@@ -150,17 +150,16 @@ router.patch('/employees/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/enterprise/employees/:id — soft delete
+// DELETE /api/enterprise/employees/:id — hard delete (removes account permanently)
 router.delete('/employees/:id', async (req, res) => {
   try {
-    const employee = await Employee.findOneAndUpdate(
-      { _id: req.params.id, enterpriseId: req.enterprise._id },
-      { isActive: false },
-      { new: true }
-    );
+    const employee = await Employee.findOneAndDelete({
+      _id: req.params.id,
+      enterpriseId: req.enterprise._id,
+    });
     if (!employee) return res.status(404).json({ message: 'Employee not found' });
     await Enterprise.findByIdAndUpdate(req.enterprise._id, { $inc: { employeeCount: -1 } });
-    res.json({ message: 'Employee deactivated' });
+    res.json({ message: 'Employee removed successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
