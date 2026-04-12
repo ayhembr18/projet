@@ -42,6 +42,16 @@ export default function EnterpriseDashboard() {
     ? Math.round(skillAnalyzed.reduce((s, e) => s + (e.aiResults.skillAnalysis.coverage_score || 0), 0) / skillAnalyzed.length)
     : null;
 
+  // Needs attention: high attrition risk employees
+  const highRisk = employees.filter(e => e.aiResults?.hrPredictions?.predictions?.attrition_risk?.level === 'High');
+  // Pending profiles
+  const pendingProfile = employees.filter(e => !e.profileCompleted);
+  // Stale analysis (>30 days)
+  const stale = employees.filter(e => {
+    const at = e.aiResults?.analyzedAt;
+    return at && ((Date.now() - new Date(at)) / (1000 * 60 * 60 * 24)) > 30;
+  });
+
   return (
     <div className="layout">
       <Sidebar />
@@ -69,7 +79,7 @@ export default function EnterpriseDashboard() {
                 </div>
                 {analyzed.length === 0 ? (
                   <div className="empty-state" style={{ padding: 24 }}>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}></div>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
                     <div style={{ fontSize: 14 }}>No analysis data yet.</div>
                     <div className="text-muted" style={{ marginTop: 4 }}>Add employees and have them complete their profiles to get AI insights.</div>
                   </div>
@@ -90,11 +100,56 @@ export default function EnterpriseDashboard() {
                 <hr className="divider" />
                 <div style={{ fontSize: 13, color: 'var(--gray-500)', lineHeight: 1.7 }}>
                   <strong style={{ color: 'var(--gray-700)' }}>How it works</strong><br />
-                  Add employees &rarr; they receive login credentials &rarr; they fill their profile &rarr; AI analysis runs automatically.
+                  Add employees → they receive login credentials → they fill their profile → AI analysis runs automatically.
                 </div>
               </div>
             </div>
 
+            {/* Needs attention section */}
+            {(highRisk.length > 0 || pendingProfile.length > 0 || stale.length > 0) && (
+              <div className="card" style={{ marginBottom: 20, borderColor: 'var(--warning)', borderWidth: 1.5 }}>
+                <div className="card-title" style={{ marginBottom: 4 }}>⚠️ Needs attention</div>
+                <div className="card-subtitle" style={{ marginBottom: 16 }}>Action items across your workforce</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {highRisk.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--danger-light)', borderRadius: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: '#991b1b', fontSize: 14 }}>🔴 High attrition risk</span>
+                        <span style={{ fontSize: 13, color: '#991b1b', marginLeft: 8 }}>
+                          {highRisk.map(e => `${e.firstName} ${e.lastName}`).slice(0, 3).join(', ')}
+                          {highRisk.length > 3 ? ` +${highRisk.length - 3} more` : ''}
+                        </span>
+                      </div>
+                      <Link to="/enterprise/staff" className="btn btn-sm btn-secondary">View</Link>
+                    </div>
+                  )}
+                  {pendingProfile.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--warning-light)', borderRadius: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: '#92400e', fontSize: 14 }}>🟡 Profiles not completed</span>
+                        <span style={{ fontSize: 13, color: '#92400e', marginLeft: 8 }}>
+                          {pendingProfile.length} employee{pendingProfile.length > 1 ? 's' : ''} haven't filled their profile yet
+                        </span>
+                      </div>
+                      <Link to="/enterprise/staff" className="btn btn-sm btn-secondary">View</Link>
+                    </div>
+                  )}
+                  {stale.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: 'var(--primary-dark)', fontSize: 14 }}>🔵 Stale analysis</span>
+                        <span style={{ fontSize: 13, color: 'var(--primary-dark)', marginLeft: 8 }}>
+                          {stale.length} employee{stale.length > 1 ? 's' : ''} haven't been re-analyzed in 30+ days
+                        </span>
+                      </div>
+                      <Link to="/enterprise/staff" className="btn btn-sm btn-secondary">View</Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Recent employees table */}
             <div className="card">
               <div className="flex-between" style={{ marginBottom: 16 }}>
                 <div className="card-title">Recent employees</div>

@@ -28,6 +28,7 @@ export default function EnterpriseEmployeeDetail() {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetResult, setResetResult] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,7 +36,6 @@ export default function EnterpriseEmployeeDetail() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!confirm(`Permanently remove ${emp?.firstName} ${emp?.lastName}? This will delete their account and all data. This cannot be undone.`)) return;
     setDeleteLoading(true);
     try {
       await api.delete(`/enterprise/employees/${id}`);
@@ -43,11 +43,11 @@ export default function EnterpriseEmployeeDetail() {
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to remove employee');
       setDeleteLoading(false);
+      setShowDeleteModal(false);
     }
   };
 
   const handleReset = async () => {
-    if (!confirm('Reset credentials for this employee?')) return;
     setResetLoading(true);
     try {
       const res = await api.post(`/enterprise/employees/${id}/reset-credentials`);
@@ -70,6 +70,39 @@ export default function EnterpriseEmployeeDetail() {
     <div className="layout">
       <Sidebar />
       <main className="main">
+        {/* Delete confirmation modal */}
+        {showDeleteModal && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: 24,
+          }}>
+            <div style={{
+              background: 'white', borderRadius: 12, padding: 32,
+              maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--gray-900)', marginBottom: 8 }}>
+                Remove employee?
+              </div>
+              <p style={{ fontSize: 14, color: 'var(--gray-600)', lineHeight: 1.6, marginBottom: 24 }}>
+                You are about to permanently remove <strong>{emp.firstName} {emp.lastName}</strong>.
+                Their account, profile, and all AI results will be deleted. This cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setShowDeleteModal(false)} disabled={deleteLoading}>
+                  Cancel
+                </button>
+                <button className="btn btn-danger" style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={handleDelete} disabled={deleteLoading}>
+                  {deleteLoading ? 'Removing...' : 'Yes, remove'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{ marginBottom: 20 }}>
           <Link to="/enterprise/staff" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: 14 }}>← Back to staff</Link>
         </div>
@@ -90,8 +123,8 @@ export default function EnterpriseEmployeeDetail() {
             <button className="btn btn-secondary btn-sm" onClick={handleReset} disabled={resetLoading}>
               {resetLoading ? 'Resetting...' : 'Reset credentials'}
             </button>
-            <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleteLoading}>
-              {deleteLoading ? 'Removing...' : '🗑 Remove employee'}
+            <button className="btn btn-danger btn-sm" onClick={() => setShowDeleteModal(true)}>
+              🗑 Remove employee
             </button>
           </div>
         </div>
