@@ -125,7 +125,7 @@ router.post('/analyze', async (req, res) => {
     const errors = [];
 
     try {
-      const skillRes = await axios.post(`${AI_SERVICE}/analyze`, skillData, { timeout: 10000 });
+      const skillRes = await axios.post(`${AI_SERVICE}/analyze`, skillData, { timeout: 60000 });
       // The model wraps its response: { skillAnalysis: { coverage_score, ... } }
       // We unwrap it so we store the flat object directly.
       skillAnalysis = skillRes.data?.skillAnalysis || skillRes.data;
@@ -136,7 +136,7 @@ router.post('/analyze', async (req, res) => {
     }
 
     try {
-      const hrRes = await axios.post(`${AI_SERVICE}/predict`, hrData, { timeout: 10000 });
+      const hrRes = await axios.post(`${AI_SERVICE}/predict`, hrData, { timeout: 60000 });
       // The model wraps its response: { hrPredictions: { predictions: {...}, insights: [...] } }
       // We unwrap it so we store the inner object directly.
       hrPredictions = hrRes.data?.hrPredictions || hrRes.data;
