@@ -111,20 +111,6 @@ router.post('/admin/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/admin/seed — create first admin (disable in production)
-router.post('/admin/seed', async (req, res) => {
-  try {
-    const count = await Admin.countDocuments();
-    if (count > 0) return res.status(409).json({ message: 'Admin already exists' });
-    const admin = await Admin.create({
-      name: 'Platform Admin',
-      email: process.env.ADMIN_EMAIL || 'admin@platform.com',
-      password: process.env.ADMIN_PASSWORD || 'Admin@123456',
-    });
-    res.status(201).json({ message: 'Admin created', email: admin.email });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
+
 
 module.exports = router;
