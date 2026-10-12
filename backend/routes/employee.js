@@ -171,7 +171,7 @@ router.post('/analyze', async (req, res) => {
 router.get('/my-results', async (req, res) => {
   try {
     const employee = await Employee.findById(req.employee._id)
-      .select('aiResults skillProfile hrProfile firstName lastName');
+        .select('aiResults skillProfile hrProfile profileCompleted firstName lastName');
 
     res.json({
       results: employee.aiResults || null,
